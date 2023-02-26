@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce Telegram Noticer
  * Plugin URI: https://github.com/quake808
- * Version: 1.0
+ * Version: 2.0
  * Author: Viktor Shevchenko
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
@@ -48,7 +48,7 @@ function noticer_settings_init() {
 
     add_settings_field(
         'telegram_bot_token',
-        'Telegram bot API token',
+        'Telegram bot API token: ',
         'telegram_bot_token_callback',
         'noticer_settings',
         'noticer_settings'
@@ -56,8 +56,16 @@ function noticer_settings_init() {
 
     add_settings_field(
         'telegram_chat_id',
-        'Chat ID Telegram',
+        'Chat ID Telegram:',
         'telegram_chat_id_callback',
+        'noticer_settings',
+        'noticer_settings'
+    );
+
+    add_settings_field(
+        'telegram_notifications_enabled',
+        'Enable/Disable: ',
+        'telegram_notifications_enabled_callback',
         'noticer_settings',
         'noticer_settings'
     );
@@ -71,8 +79,27 @@ function noticer_settings_init() {
         'noticer_settings',
         'telegram_chat_id'
     );
+
+    register_setting(
+        'noticer_settings',
+        'telegram_notifications_enabled',
+        array(
+            'type' => 'boolean',
+            'sanitize_callback' => 'boolval'
+        )
+    );
 }
 add_action( 'admin_init', 'noticer_settings_init' );
+
+function telegram_notifications_enabled_callback() {
+    $value = get_option( 'telegram_notifications_enabled', false );
+    ?>
+    <label for="telegram_notifications_enabled">
+        <input type="checkbox" id="telegram_notifications_enabled" name="telegram_notifications_enabled" <?php checked( $value ); ?>>
+    </label>
+    <?php
+}
+
 function noticer_settings_callback() {
     ?>
     <div class="wrap">
@@ -116,6 +143,11 @@ function noticer_update_order_status( $order_id, $old_status, $new_status, $orde
             return;
         }
     
+        $telegram_notifications_enabled = get_option( 'telegram_notifications_enabled', false );
+        if ( ! $telegram_notifications_enabled ) {
+            return;
+        }
+        
         // Receiving order details 
         $order_number = $order->get_order_number();
         $customer_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
